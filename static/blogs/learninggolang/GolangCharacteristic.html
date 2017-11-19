@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+<!-- Begin Jekyll SEO tag v2.3.0 -->
+<title>Golang语言特性总记 | The Wonderful Heaven</title>
+<meta property="og:title" content="Golang语言特性总记" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="一些值得一提的Golang语言特性" />
+<meta property="og:description" content="一些值得一提的Golang语言特性" />
+<link rel="canonical" href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic.html" />
+<meta property="og:url" content="https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic.html" />
+<meta property="og:site_name" content="The Wonderful Heaven" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-10-28T12:03:51+00:00" />
+<script type="application/ld+json">
+{"name":null,"description":"一些值得一提的Golang语言特性","author":null,"@type":"BlogPosting","url":"https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic.html","publisher":null,"image":null,"headline":"Golang语言特性总记","dateModified":"2017-10-28T12:03:51+00:00","datePublished":"2017-10-28T12:03:51+00:00","sameAs":null,"mainEntityOfPage":{"@type":"WebPage","@id":"https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=55d055ca0a2aac6efd50cff0c6c6364c3913f9fa">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>The Wonderful Heaven</h1>
+        <p>不良天人もブログを書いているね。</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <div id="menu">
+          <a href="/" class="button"><strong>Home</strong></a>
+          <a href="/blogs" class="button"><strong>Blogs</strong></a>
+          <a href="/about" class="button"><strong>About</strong></a>
+          <a href="/hello" class="button"><strong>Hello</strong></a>
+        </div>
+        <!-- <a href="http://github.com/HinanawiTenshi/HinanawiTenshi.github.io" class="button fork"><strong>View On GitHub</strong></a> -->
+        
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1 class="page-heading">Golang语言特性总记</h1>
+<hr>
+
+<ul>
+  <li>Slice</li>
+  <li>Closure</li>
+  <li>Interface</li>
+</ul>
+
+<hr />
+
+<p><br />看到了就会写上，不定更新。</p>
+
+<h2 id="slice">Slice</h2>
+
+<p>在Gotour里，<code class="highlighter-rouge">slice</code>是这样解释的：</p>
+
+<blockquote>
+  <p>An array has a fixed size. A slice, on the other hand, is a
+dynamically-sized, flexible view into the elements of an array. In
+practice, slices are much more common than arrays.</p>
+</blockquote>
+
+<p>简单翻译一下，<code class="highlighter-rouge">slice</code>就是一个动态数组，大家平时一般都用它，而不是用定长的数组。</p>
+
+<p>先简单看一下<code class="highlighter-rouge">slice</code>的使用。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var s []int  // s is a nil slice
+
+primesArr := [6]int{2, 3, 5, 7, 11, 13}  // primesArr is an array
+primesSlice := []int{2, 3, 5, 7, 11, 13}  // primeSlice is a slice
+
+primesSlice = primesSlice[0:2] // {2, 3}
+primesSlice = primesSlice[2:4] // {5, 7}
+</code></pre></div></div>
+
+<p>然而，Gotour后还提到了，【<code class="highlighter-rouge">slice</code>是数组的引用】，那么这就是另外一个故事了。在Golang中，<code class="highlighter-rouge">array</code>和<code class="highlighter-rouge">slice</code>都有两个固有的属性<code class="highlighter-rouge">length</code>和<code class="highlighter-rouge">capacity</code>，<code class="highlighter-rouge">array</code>中这两者是恒等的，而<code class="highlighter-rouge">slice</code>中则不然。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a [5]int
+var s []int
+var ss = make([]int, 5)
+fmt.Println(len(a), cap(a), len(s), cap(s), len(ss), cap(ss))
+    // 5 5 0 0 5 5
+fmt.Println(len(ss[0:1]), cap(ss[0:1]))
+    // 1 5
+fmt.Println(len(ss[2:3]), cap(ss[2:3]))
+    // 1 3
+</code></pre></div></div>
+
+<p>所以对于<code class="highlighter-rouge">slice</code>正确的理解，是将其看作一个数组的引用，而不是看作一个所谓的【动态数组】。</p>
+
+<ul>
+  <li>
+    <p>用数组初始化<code class="highlighter-rouge">slice</code>的时候，可以看作是引用了内存里的一个无名数组。</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">capacity</code>记录的是这个<code class="highlighter-rouge">slice</code>所引用的数组的长度，而<code class="highlighter-rouge">length</code>记录的是当前引用过来的元素个数。</p>
+  </li>
+  <li>
+    <p><code class="highlighter-rouge">slice</code>可进行随意的切分，但是从左边切是不可恢复的，从右边切是可恢复的，同时一旦这个<code class="highlighter-rouge">slice</code>的某个元素被更改，那么由这个<code class="highlighter-rouge">slice</code>切出来的所有<code class="highlighter-rouge">slice</code>中这个元素都将被更改。</p>
+  </li>
+  <li>
+    <p>直接创建的<code class="highlighter-rouge">slice</code>空变量是没有容纳能力的，要使用<code class="highlighter-rouge">make</code>方法；若要进行深复制，也要使用<code class="highlighter-rouge">make</code>方法来创建一个新的<code class="highlighter-rouge">slice</code>。</p>
+  </li>
+</ul>
+
+<h2 id="closure">Closure</h2>
+
+<p>闭包可能是学习Golang的第一个难题，但是闭包并不是Golang专属的特性，在很多其他语言中也有闭包，最典型的——Javascript.</p>
+
+<p>闭包的问题难在难以界定——闭包到底是什么？能不能有一言可以蔽之？在Gotour中对闭包的解释是</p>
+
+<blockquote>
+  <p>A closure is a function value that references variables from outside its body.
+The function may access and assign to the referenced variables; in the sense
+the function is “bound” to the variables.</p>
+</blockquote>
+
+<p>简而言之，就是在函数内可以保持一个函数外的局部变量的值，且不需要这个值进行任何形式的传递。我认为这段话基本上把闭包最重要的特点描述出来了——利用函数对局部变量作用域进行灵活操作。</p>
+
+<p>Gotour里给的例子是一个简单的返回函数闭包，实际上闭包的用途实际上远不止于此，典型的例子如Javascript中对于循环添加事件的处理，但是其中最核心的想法是不变的，就是将局部变量保持在一个【看似】无法访问它的作用域中。</p>
+
+<p>但是实际上，编成的时候大部分用到闭包的情况都是靠经验判断的，我们平时应该多多积累，在我们编程卡住的时候，不妨想想，这地方是否能用一用闭包？</p>
+
+<h2 id="interface">Interface</h2>
+
+<p><code class="highlighter-rouge">Interface</code>可以说是Golang里最最最重要的特点了，在Golang里实现【面向对象】特点全靠它，但它同时也是一个较难理解的概念。</p>
+
+<p>让我们先来看Gotour是怎么说的</p>
+
+<blockquote>
+  <p>An interface type is defined as a set of method signatures.
+A value of interface type can hold any value that implements those methods.</p>
+</blockquote>
+
+<p>这两句简短的话道出了<code class="highlighter-rouge">Interface</code>大量的奥秘。首先，interface是一个方法签名集，即interface可以看作是一个集合，这个集合的元素是函数（函数签名）；其次，<code class="highlighter-rouge">interface</code>又可以作为任何实现了它方法的值的变量，这句话比较难理解，让我们看几个例子。</p>
+
+<ol>
+  <li>
+    <p>首先是我们非常熟悉的<code class="highlighter-rouge">fmt.Println()</code>函数，可以看到，官方文档中，这个函数接受的参数是一系列的【空接口】。</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> func Println(a ...interface{}) (n int, err error)
+</code></pre></div>    </div>
+
+    <p>回想一下我们使用这个函数的场景，任何类型的变量都可以作为参数传入这个函数中，没错，就是因为<code class="highlighter-rouge">interface{}</code>是一个函数签名集为空的接口，既然它没有任何方法需要实现，那么根据第二句话，任何类型的变量实际上都是<code class="highlighter-rouge">interface{}</code>类型，或者说都可以转化为<code class="highlighter-rouge">interface{}</code>类型。在很多处理未知类型的情况下（模板编程），Golang提供了<code class="highlighter-rouge">interface{}</code>给我们使用。</p>
+  </li>
+  <li>
+    <p>文件读写</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> file, _ := os.OpenFile(somePath, os.O_RDONLY, os.ModePerm)
+ msg := make([]byte, 0)
+ file.Read(msg)
+ fmt.Println(string(msg))
+</code></pre></div>    </div>
+
+    <p>上面是一个简单的读文件过程，<code class="highlighter-rouge">os.OpenFile</code>返回一个<code class="highlighter-rouge">os.File</code>结构体，而调用的<code class="highlighter-rouge">os.File</code>结构体的<code class="highlighter-rouge">Read</code>方法是接口<code class="highlighter-rouge">io.Reader</code>里的方法，也就是说<code class="highlighter-rouge">os.File</code>实现了接口<code class="highlighter-rouge">io.Reader</code>.但是这并不足以体现接口在这里的作用，我们再来看下一段代码</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> file, _ := os.OpenFile(somePath, os.O_RDONLY, os.ModePerm)
+ jsonDecoder := json.NewDecoder(file)
+ for jsonDecoder.More() {
+     var obj SomeStruct
+     jsonDecoder.Decode(\&amp;obj)
+     fmt.Println(obj)
+ }
+</code></pre></div>    </div>
+    <p>上面是一个读取json文件的例子，注意到<code class="highlighter-rouge">json</code>包中的<code class="highlighter-rouge">NewDecoder</code>方法返回一个JSON解码器，能够将JSON文件中的条目写入一个结构体中，而这个方法接受的参数类型并不是<code class="highlighter-rouge">os.File</code>，而是<code class="highlighter-rouge">io.Reader</code>，也就是说任何实现了这个接口的结构体都可以被当作参数传入，因为只要实现了<code class="highlighter-rouge">io.Reader</code>的方法就【足够】成为一个JSON解码器了。这样一来，无论是<code class="highlighter-rouge">strings.Reader</code>还是<code class="highlighter-rouge">os.File</code>，甚至是你自己实现的自定义结构体，都可以成为JSON解码器，一定程度上说，这就是体现了面向对象里的继承和多态的思想，大大提高了开发效率。</p>
+  </li>
+</ol>
+
+<p>接口，是一个函数签名的集合，更是也是一个可自定义的抽象类型，正是它的存在使得在Golang里应用面向对象的设计思想成为可能。</p>
+
+<h2 id="参考">参考</h2>
+
+<p><a href="https://tour.golang.org/">GoTour</a></p>
+
+
+
+
+      </section>
+      <footer>
+        <p><a href="http://github.com/HinanawiTenshi">Github</a></p>
+        <p><a href="mailto:dr.paper@live.com">Email</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+
+    
+  </body>
+</html>

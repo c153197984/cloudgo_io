@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+<!-- Begin Jekyll SEO tag v2.3.0 -->
+<title>Golang Log | The Wonderful Heaven</title>
+<meta property="og:title" content="Golang Log" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Package log of Golang" />
+<meta property="og:description" content="Package log of Golang" />
+<link rel="canonical" href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog.html" />
+<meta property="og:url" content="https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog.html" />
+<meta property="og:site_name" content="The Wonderful Heaven" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-10-31T07:57:00+00:00" />
+<script type="application/ld+json">
+{"name":null,"description":"Package log of Golang","author":null,"@type":"BlogPosting","url":"https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog.html","publisher":null,"image":null,"headline":"Golang Log","dateModified":"2017-10-31T07:57:00+00:00","datePublished":"2017-10-31T07:57:00+00:00","sameAs":null,"mainEntityOfPage":{"@type":"WebPage","@id":"https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=55d055ca0a2aac6efd50cff0c6c6364c3913f9fa">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>The Wonderful Heaven</h1>
+        <p>不良天人もブログを書いているね。</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <div id="menu">
+          <a href="/" class="button"><strong>Home</strong></a>
+          <a href="/blogs" class="button"><strong>Blogs</strong></a>
+          <a href="/about" class="button"><strong>About</strong></a>
+          <a href="/hello" class="button"><strong>Hello</strong></a>
+        </div>
+        <!-- <a href="http://github.com/HinanawiTenshi/HinanawiTenshi.github.io" class="button fork"><strong>View On GitHub</strong></a> -->
+        
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1 class="page-heading">Golang Log</h1>
+<hr>
+
+<h1 id="为啥要log">为啥要Log</h1>
+
+<p>Log, 意为原木、树干子，把树干子切开，上面有很多一圈一圈、密密麻麻的纹理；程序log也是一个一行一行、密密麻麻的文件，记录着程序运行过程中各种信息。</p>
+
+<p>但这些信息不一定能全部用到，很多时候只是一种备考——发生了某种状况的时候才查阅，那不做log行不行呢？程序肯定不会因此而罢工，然而我们得知道，计算机程序在运行的时候依然是失控的，即使这个程序是我们一行一行敲出来的；由于计算机“感知”到的时间太快了，程序在一个须臾之间就能进行大量变化，我们人类根本无法以毫秒级来跟踪它。一个失控的程序，出错暴走的可能性是极高的，在加之我们更有许许多多失控的用户，下雨天，与这些失控的程序更配噢，出了个什么问题根本无法避免。所以我们得log，得让秉笔直书的logger忠实地记录下关键信息，出现问题时能够发现问题、解决问题、澄清事实和责任关系。一个健全的中大型程序，log当然是必不可少的。</p>
+
+<h1 id="package-log">Package log</h1>
+
+<p>扯远了..这是Golang学习…</p>
+
+<blockquote>
+  <p>Package log implements a simple logging package. It defines a type, Logger,
+with methods for formatting output. It also has a predefined ‘standard’ Logger
+accessible through helper functions Print[f|ln], Fatal[f|ln], and
+Panic[f|ln], which are easier to use than creating a Logger manually. That
+logger writes to standard error and prints the date and time of each logged
+message. Every log message is output on a separate line: if the message being
+printed does not end in a newline, the logger will add one. The Fatal
+functions call os.Exit(1) after writing the log message. The Panic functions
+call panic after writing the log message.</p>
+</blockquote>
+
+<p>Golang的log包提供了一个简单的log功能——就是一个用多种格式化输出函数的Logger类，能够输出日期、时间、时区、文件名到标准输出、标准错误，并有一些预置函数用于在输出后进行一些其他操作。我们的重点在怎么定义我们自己的Logger类上。</p>
+
+<h2 id="创建-logger">创建 Logger</h2>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func New(out io.Writer, prefix string, flag int) *Logger
+</code></pre></div></div>
+
+<p>使用log包中的New函数创建一个新Logger。</p>
+
+<p>第一个参数<code class="highlighter-rouge">out</code>表明log要写往何处。多亏了Golang的接口机制（在Golang语言特性总记有一些讨论），我们能很方便的指定目的地。</p>
+
+<p>第二个参数<code class="highlighter-rouge">prefix</code>是每一条log的前缀，比如我们可以在错误记录前加上前缀“Error:”。</p>
+
+<p>第三个参数<code class="highlighter-rouge">flag</code>定义了每一条log的形式，说白了就是加上一些日期啊、时间啊、文件名啊之类的信息，用log包里的常量定义。</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>E.g.
+
+logFile, _ := os.Open("myLogFile")
+myLogger := log.New(logFile, "[INFO]", log.Ldate|log.Ltime)
+</code></pre></div></div>
+
+<p>创建一个Logger，输出到文件<code class="highlighter-rouge">myLogFile</code>中，每一条记录规定加上前缀<code class="highlighter-rouge">INFO</code>，以及日期和时间。</p>
+
+<h2 id="使用-logger">使用 Logger</h2>
+
+<p>Logger创建完了，我们得记录啊。记录的时候用Logger自带的方法就行了，最简单的例如</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (l *Logger) Println(v ...interface{})
+</code></pre></div></div>
+
+<p>复杂点的，像</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>func (l *Logger) Fatalln(v ...interface{})
+</code></pre></div></div>
+
+<p>Fatal执行完之后会直接异常退出程序（执行<code class="highlighter-rouge">os.Exit(1)</code>)</p>
+
+<p>还有什么<code class="highlighter-rouge">Panicln</code>，会在执行之后执行<code class="highlighter-rouge">panic()</code>（发生了很恐怖的错误，吓得我赶紧把程序关了）</p>
+
+<p>以及一些<code class="highlighter-rouge">get</code>和<code class="highlighter-rouge">set</code>函数就没了，相当轻量级啊，不过能满足需要就是好东西。</p>
+
+<p>实际使用一下：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>E.g.
+
+myLogger.Println("[r0beRT] Login")
+</code></pre></div></div>
+
+<p>运行之后看起来就像这个样子</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[INFO] 2017/10/31 15:11:39 [r0beRT] Login
+</code></pre></div></div>
+
+<p>log包简单易用，但是我们得自己定义我们的输出，要定义的有用而又优雅，没有多余信息且又面面俱到，输出结果还符合国际一般规范（不成文），才是大头啊，还是得自己去多看多用，积累经验呀。</p>
+
+<h1 id="参考">参考</h1>
+
+<p><a href="https://golang.org/pkg/log/">log - The Go Programming Language</a></p>
+
+
+
+
+      </section>
+      <footer>
+        <p><a href="http://github.com/HinanawiTenshi">Github</a></p>
+        <p><a href="mailto:dr.paper@live.com">Email</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+
+    
+  </body>
+</html>

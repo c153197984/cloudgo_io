@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.6.2">Jekyll</generator><link href="https://hinanawitenshi.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://hinanawitenshi.github.io/" rel="alternate" type="text/html" /><updated>2017-11-19T07:15:34+00:00</updated><id>https://hinanawitenshi.github.io/</id><title type="html">The Wonderful Heaven</title><subtitle>不良天人もブログを書いているね。</subtitle><entry><title type="html">Golang Docker简易使用</title><link href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker.html" rel="alternate" type="text/html" title="Golang Docker简易使用" /><published>2017-11-14T04:37:00+00:00</published><updated>2017-11-14T04:37:00+00:00</updated><id>https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker</id><content type="html" xml:base="https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker.html">&lt;h2 id=&quot;docker是什么&quot;&gt;Docker是什么？&lt;/h2&gt;
+
+&lt;h3 id=&quot;摘要&quot;&gt;摘要&lt;/h3&gt;
+
+&lt;p&gt;Docker的概念类似于虚拟机，使用方式上和Git很像。一个虚拟机运行一个操作系统，在这个操作系统上可以运行各种各样的程序，主操作系统上的虚拟机充当一个虚拟硬件的角色，但是有一个问题：程序的运行往往需要很多依赖支持，例如C的运行时、python应用的python环境、java应用的JVM等等，在虚拟机环境下，这些运行环境还是要用户去手动配置的；而Docker更高一层，它充当的不是虚拟硬件，而是虚拟运行环境；只要把应用放入Docker中，运行时Docker会自动配置好所需的运行环境，用户在一个操作系统下就算不安装任何环境，只要装一个Docker，任何应用程序都可以直接跑起来。&lt;/p&gt;
+
+&lt;h3 id=&quot;docker的结构&quot;&gt;Docker的结构&lt;/h3&gt;
+
+&lt;p&gt;实际使用过程中，有两个关键性的对象——&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Container&lt;/code&gt;。&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;An image is a lightweight, stand-alone, executable package that includes everything needed to run a piece of software, including the code, a runtime, libraries, environment variables, and config files.
+A container is a runtime instance of an image—what the image becomes in memory when actually executed. It runs completely isolated from the host environment by default, only accessing host files and ports if configured to do so.
+Containers run apps natively on the host machine’s kernel. They have better performance characteristics than virtual machines that only get virtual access to host resources through a hypervisor. Containers can get native access, each one running in a discrete process, taking no more memory than any other executable.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;是一个轻量级的、独立的、可执行的包，它包含了所有软件运行所需要的组件。当然，我们在制作&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;的时候并不需要手动去下载那些组件啊依赖什么的，因为那些组件在网络上也已经有现成的&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;了，我们只管写代码，之后交给Docker去自动合成就好了。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Container&lt;/code&gt;是一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;的运行实例。&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;Container&lt;/code&gt;的关系就好像程序和进程，把&lt;code class=&quot;highlighter-rouge&quot;&gt;Image&lt;/code&gt;跑起来就是一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Container&lt;/code&gt;了，这个玩意儿里面包括了所有需要的运行环境，程序能毫无阻拦地在里面运行，并且这个东西是运行在主操作系统上的，相较于虚拟机来说肯定有性能上的优势。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;为什么要使用docker&quot;&gt;为什么要使用Docker？&lt;/h2&gt;
+
+&lt;p&gt;对于一个技术，我们要正确使用它就必须清除它是为了解决什么问题。在linux系统下玩过开发的应该都有体会，安装环境是多么令人头疼的一件事，每次都要去别人官网看一大堆教程，安装的时候还可能遇到这样那样的错误，在stackoverflow里又要逛好久；这倒不是什么事儿，装完了就一劳永逸了。关键是当我们需要在一个别的什么新的操作系统下运行一个程序，难道还得重复一遍之前的痛苦？一个典型的例子就是部署服务器了，在vps服务商那儿高高兴兴地买了个vps，登上去之后把自己的server一拷，发现根本跑不起来，又是缺这又是缺那的，这个时候我们终于意识到了，Docker这个技术是多么的伟大这个事实..所以说为什么现在各大云服务商都推出了容器服务，你根本就接触不到操作系统，把Docker的image给人一传，你的服务器马上就能工作了。（AWS的注册要国际银行卡啊..臣没有呀..）&lt;/p&gt;
+
+&lt;h2 id=&quot;docker的使用&quot;&gt;Docker的使用&lt;/h2&gt;
+
+&lt;h3 id=&quot;安装ubuntu-1604-lts&quot;&gt;安装（Ubuntu 16.04 LTS）&lt;/h3&gt;
+
+&lt;p&gt;当然了，就算是项羽也不能把自个儿拎起来；Docker本身还是得我们自己手动安装的。实话说，安装过程还是看官方教程比较好，博客的东西都不具有时效性啊。&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;卸载旧版Docker&lt;/p&gt;
+
+    &lt;p&gt;话说开天辟地之时，Docker是不分社区版和企业版的，安装方式也没那么复杂，可是后来社区版和企业版一分，安装方式也变了，还得我们自己卸载旧版本。不过第一次安装的话这一步就不用管了。&lt;/p&gt;
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; $ sudo apt-get remove docker docker-engine docker.io
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;安装Docker CE&lt;/p&gt;
+
+    &lt;p&gt;我当然是安装社区版了；过程其实很简单，把下面一串命令麻溜地敲进去就好了。&lt;/p&gt;
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; $ sudo apt-get update
+
+ $ sudo apt-get install \
+ apt-transport-https \
+ ca-certificates \
+ curl \
+ software-properties-common
+
+ $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+ $ sudo add-apt-repository \
+ &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+ $(lsb_release -cs) \
+ stable&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+
+    &lt;p&gt;这几个命令大概就是先安装依赖，然后创建一个专属的包仓库，再从这个仓库里安装（这样更新卸载啥的都很方便）；最后一个命令才是真正的安装，要是找不到包的话再update一下应该就可以了。BTW，docker的服务器要在国内访问可能有些困难，这个自己想办法解决吧。&lt;/p&gt;
+
+    &lt;p&gt;另外，计算机架构不同的话要改一改最后一个命令里的&lt;code class=&quot;highlighter-rouge&quot;&gt;arch=amd64&lt;/code&gt;这个部分，具体等于啥，我也不懂，不过一般要改这个的人应该都不用看这个博客了..&lt;/p&gt;
+
+    &lt;p&gt;当然你也可以从官网下个deb，然后每次更新都重新下新的deb..&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;卸载Docker CE&lt;/p&gt;
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; $ sudo apt-get purge docker-ce
+ $ sudo rm -rf /var/lib/docker
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+
+    &lt;p&gt;一般来说这辈子都没机会输入这两个命令。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;简单使用&quot;&gt;简单使用&lt;/h3&gt;
+
+&lt;p&gt;今天我们的目标是把一个Go语言的hello world服务器在docker里运行一波，至于部署到服务器上..AWS中国还没给我发邮件..&lt;/p&gt;
+
+&lt;p&gt;首先看一下源代码目录：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;simple_http
+&amp;gt; .git
+&amp;gt; Dockerfile
+&amp;gt; main.go
+&amp;gt; README.md
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;除了&lt;code class=&quot;highlighter-rouge&quot;&gt;Dockerfile&lt;/code&gt;，都和docker没啥关系了。Dockerfile是一个配置文件，所有必须的组建和依赖都在这里面进行配置，例如安装python依赖包之类的；除此之外，还有一些功能性的东西，比如导出端口啥的。&lt;/p&gt;
+
+&lt;p&gt;鉴于Go语言先天优势，它实在是没啥依赖，Dockerfile里只用写两行就行了&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;FROM golang:onbuild
+EXPOSE 8080
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;FROM&lt;/code&gt;条目一般来说是必需的，官方有各种各样的语言镜像，提供了最基础的运行环境。&lt;code class=&quot;highlighter-rouge&quot;&gt;FROM&lt;/code&gt;后跟着一个镜像名，一个镜像名后加个冒号表示TAG，也就是说&lt;code class=&quot;highlighter-rouge&quot;&gt;golang&lt;/code&gt;是镜像名，&lt;code class=&quot;highlighter-rouge&quot;&gt;onbuild&lt;/code&gt;是TAG。至于TAG是干啥的，我也不太清楚..&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;EXPOSE&lt;/code&gt;是导出的端口。Docker里的应用程序实际上仍然是在沙盒里运行的，即使程序里监听了8080端口，也是监听的那个沙盒的8080端口，我们要把沙盒的8080端口和主机的8080端口连在一起，才能访问。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;什么？你说你用的是python？那Dockerfile可有的写了，善用官方文档和搜索引擎..&lt;/p&gt;
+
+&lt;p&gt;写完Dockerfile之后，就可以创建镜像了，cd到这个目录然后敲&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ sudo docker build -t xxx:yyy .
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;-t&lt;/code&gt;表示命名，xxx表示镜像名，yyy表示TAG&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;跑完之后，一个镜像就创建好了，可以敲入如下命令来查看&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ sudo docker images
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;创建完镜像之后，就是运行了，敲入如下命令&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ docker run --publish 8080:8080 --name test --rm xxx
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;--publish xxxx:yyyy&lt;/code&gt; 将主机的xxxx端口绑定到container的yyyy端口。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;--name xxx&lt;/code&gt; 给我们的container起个名字（重要）。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;--rm&lt;/code&gt; 在运行完成后删除镜像。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;xxx&lt;/code&gt; 刚才创建的镜像名&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这样我们的程序就在docker里跑起来了，而且监听了主机的8080端口，可以curl一下localhost:8080来试试效果。&lt;/p&gt;
+
+&lt;h2 id=&quot;附录&quot;&gt;附录&lt;/h2&gt;
+
+&lt;h3 id=&quot;maingo&quot;&gt;main.go&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+	&lt;span class=&quot;s2&quot;&gt;&quot;fmt&quot;&lt;/span&gt;
+	&lt;span class=&quot;s2&quot;&gt;&quot;log&quot;&lt;/span&gt;
+	&lt;span class=&quot;s2&quot;&gt;&quot;net/http&quot;&lt;/span&gt;
+	&lt;span class=&quot;s2&quot;&gt;&quot;strings&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;A&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;simple&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;server&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;This&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hello user&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;based&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Example&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;localhost&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;8080&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bar&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Hello&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;foo&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bar&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;!
+&lt;/span&gt;	&lt;span class=&quot;p&quot;&gt;//&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HandleFunc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;w&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ResponseWriter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Fprintf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hello %s!&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;strings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:],&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot; &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Println&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Listening to port 8080.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;nb&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Fatal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ListenAndServe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;:8080&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;参考&quot;&gt;参考&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://docs.docker.com/&quot;&gt;Docker Docs&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://blog.golang.org/docker&quot;&gt;Deploying Go servers with Docker - The Go Blog&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><summary type="html">Docker是什么？</summary></entry><entry><title type="html">Golang net/http 源码分析</title><link href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangHttp.html" rel="alternate" type="text/html" title="Golang net/http 源码分析" /><published>2017-11-13T15:12:00+00:00</published><updated>2017-11-13T15:12:00+00:00</updated><id>https://hinanawitenshi.github.io/blogs/learninggolang/GolangHttp</id><content type="html" xml:base="https://hinanawitenshi.github.io/blogs/learninggolang/GolangHttp.html">&lt;p&gt;Go语言的内置包&lt;code class=&quot;highlighter-rouge&quot;&gt;net&lt;/code&gt;提供了大量api，功能十分强大、实现非常优美，不读一读实在是有点可惜呀。&lt;/p&gt;
+
+&lt;h2 id=&quot;程序&quot;&gt;程序&lt;/h2&gt;
+
+&lt;p&gt;首先，写一个简单的服务器。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;fmt&quot;&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;log&quot;&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;net/http&quot;&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;strings&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;A&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;simple&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;server&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;This&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hello user&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;based&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Example&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curl&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;localhost&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;8080&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;foo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bar&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Hello&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;foo&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bar&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;!
+&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;//&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HandleFunc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;w&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ResponseWriter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Fprintf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hello %s!&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+		      &lt;span class=&quot;n&quot;&gt;strings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:],&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot; &quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Println&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Listening to port 8080.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Fatal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ListenAndServe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;:8080&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;如注释所说，这个服务器会发一个“Hello xxx”给客户端，一个简单的hello world式程序。&lt;/p&gt;
+
+&lt;h2 id=&quot;代码分析&quot;&gt;代码分析&lt;/h2&gt;
+
+&lt;p&gt;虽然这个服务器只有不到10行，但是通过代码追踪（ctrl+鼠标左键），我们可以一层一层地看到&lt;code class=&quot;highlighter-rouge&quot;&gt;net/http&lt;/code&gt;包里各种各样的接口。&lt;/p&gt;
+
+&lt;h3 id=&quot;httphandlefunc&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http.HandleFunc&lt;/code&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;http.HandleFunc(pattern string, handler func(ResponseWriter, *Request))
+-&amp;gt; (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))
+-&amp;gt; (mux *ServeMux) Handle(pattern string, handler Handler)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http&lt;/code&gt;包中的&lt;code class=&quot;highlighter-rouge&quot;&gt;HandleFunc&lt;/code&gt;方法会给默认的&lt;code class=&quot;highlighter-rouge&quot;&gt;ServerMux&lt;/code&gt;注册一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;，用于响应客户端发来的请求；它包含两个参数，一个是字符串类型的&lt;code class=&quot;highlighter-rouge&quot;&gt;URL&lt;/code&gt;，另一个是&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;函数，这两个参数经过三层传递传递到&lt;code class=&quot;highlighter-rouge&quot;&gt;DefaultServeMux.Handle&lt;/code&gt;函数中，才会被正式执行注册操作。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ServerMux&lt;/code&gt;是一个HTTP协议请求复用器，其中包含多个&lt;code class=&quot;highlighter-rouge&quot;&gt;URL&lt;/code&gt;到&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;的映射，用于匹配不同的客户端请求，并执行相应的&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;；&lt;code class=&quot;highlighter-rouge&quot;&gt;ServerMux&lt;/code&gt;支持近似匹配，当匹配不完全时，它会寻找最接近的匹配。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;DefaultServerMux&lt;/code&gt;是包中自带的默认复用器，也就是说，开发者可以定义自己的复用器。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;是一个接口，包含一个处理函数。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这个过程涉及到两个重要结构&lt;code class=&quot;highlighter-rouge&quot;&gt;ServeMux&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;muxEntry&lt;/code&gt;。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// type ServeMux
+type ServeMux struct {
+    mu    sync.RWMutex
+    m     map[string]muxEntry
+    hosts bool // whether any patterns contain hostnames
+}
+// type muxEntry
+type muxEntry struct {
+    explicit bool
+    h        Handler
+    pattern  string
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;mu&lt;/code&gt; 一个读写排它锁，用于保证注册&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;过程的原子性。（操作系统知识怎么在这出现了）&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;m&lt;/code&gt; 映射，储存了从&lt;code class=&quot;highlighter-rouge&quot;&gt;URL&lt;/code&gt;到&lt;code class=&quot;highlighter-rouge&quot;&gt;muxEntry&lt;/code&gt;的映射，&lt;code class=&quot;highlighter-rouge&quot;&gt;muxEntry&lt;/code&gt;中包含了处理函数&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;hosts&lt;/code&gt; 表示是否有某个&lt;code class=&quot;highlighter-rouge&quot;&gt;pattern&lt;/code&gt;包含主机名。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;httplistenandserve&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http.ListenAndServe&lt;/code&gt;&lt;/h3&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;http.ListenAndServe(addr string, handler Handler)
+-&amp;gt; (srv *Server) ListenAndServe()
+-&amp;gt; (srv *Server) Serve(l net.Listener)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;http.ListenAndServe&lt;/code&gt;方法创建一个&lt;code class=&quot;highlighter-rouge&quot;&gt;Server&lt;/code&gt;，监听TCP地址&lt;code class=&quot;highlighter-rouge&quot;&gt;addr&lt;/code&gt;并使用&lt;code class=&quot;highlighter-rouge&quot;&gt;handler&lt;/code&gt;来处理接收到的请求。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Server&lt;/code&gt;定义了运行一个HTTP服务器的各种参数，包括TCP地址、&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;、TLS参数、超时时间、最大头长度等等。&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Server&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;ListenAndServe&lt;/code&gt;方法创建一个&lt;code class=&quot;highlighter-rouge&quot;&gt;net&lt;/code&gt;包中的传输层TCP监听器，并调用&lt;code class=&quot;highlighter-rouge&quot;&gt;Serve&lt;/code&gt;方法。&lt;code class=&quot;highlighter-rouge&quot;&gt;Serve&lt;/code&gt;方法接收一个TCP监听器，通过该监听器获得连接信息，并为每一个连接创建一个线程并调用&lt;code class=&quot;highlighter-rouge&quot;&gt;Server&lt;/code&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;Handler&lt;/code&gt;来响应。具体实现细节涉及网络编程。&lt;/li&gt;
+&lt;/ul&gt;</content><author><name></name></author><summary type="html">Go语言的内置包net提供了大量api，功能十分强大、实现非常优美，不读一读实在是有点可惜呀。</summary></entry><entry><title type="html">Golang Log</title><link href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog.html" rel="alternate" type="text/html" title="Golang Log" /><published>2017-10-31T07:57:00+00:00</published><updated>2017-10-31T07:57:00+00:00</updated><id>https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog</id><content type="html" xml:base="https://hinanawitenshi.github.io/blogs/learninggolang/GolangLog.html">&lt;h1 id=&quot;为啥要log&quot;&gt;为啥要Log&lt;/h1&gt;
+
+&lt;p&gt;Log, 意为原木、树干子，把树干子切开，上面有很多一圈一圈、密密麻麻的纹理；程序log也是一个一行一行、密密麻麻的文件，记录着程序运行过程中各种信息。&lt;/p&gt;
+
+&lt;p&gt;但这些信息不一定能全部用到，很多时候只是一种备考——发生了某种状况的时候才查阅，那不做log行不行呢？程序肯定不会因此而罢工，然而我们得知道，计算机程序在运行的时候依然是失控的，即使这个程序是我们一行一行敲出来的；由于计算机“感知”到的时间太快了，程序在一个须臾之间就能进行大量变化，我们人类根本无法以毫秒级来跟踪它。一个失控的程序，出错暴走的可能性是极高的，在加之我们更有许许多多失控的用户，下雨天，与这些失控的程序更配噢，出了个什么问题根本无法避免。所以我们得log，得让秉笔直书的logger忠实地记录下关键信息，出现问题时能够发现问题、解决问题、澄清事实和责任关系。一个健全的中大型程序，log当然是必不可少的。&lt;/p&gt;
+
+&lt;h1 id=&quot;package-log&quot;&gt;Package log&lt;/h1&gt;
+
+&lt;p&gt;扯远了..这是Golang学习…&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Package log implements a simple logging package. It defines a type, Logger,
+with methods for formatting output. It also has a predefined ‘standard’ Logger
+accessible through helper functions Print[f|ln], Fatal[f|ln], and
+Panic[f|ln], which are easier to use than creating a Logger manually. That
+logger writes to standard error and prints the date and time of each logged
+message. Every log message is output on a separate line: if the message being
+printed does not end in a newline, the logger will add one. The Fatal
+functions call os.Exit(1) after writing the log message. The Panic functions
+call panic after writing the log message.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Golang的log包提供了一个简单的log功能——就是一个用多种格式化输出函数的Logger类，能够输出日期、时间、时区、文件名到标准输出、标准错误，并有一些预置函数用于在输出后进行一些其他操作。我们的重点在怎么定义我们自己的Logger类上。&lt;/p&gt;
+
+&lt;h2 id=&quot;创建-logger&quot;&gt;创建 Logger&lt;/h2&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func New(out io.Writer, prefix string, flag int) *Logger
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;使用log包中的New函数创建一个新Logger。&lt;/p&gt;
+
+&lt;p&gt;第一个参数&lt;code class=&quot;highlighter-rouge&quot;&gt;out&lt;/code&gt;表明log要写往何处。多亏了Golang的接口机制（在Golang语言特性总记有一些讨论），我们能很方便的指定目的地。&lt;/p&gt;
+
+&lt;p&gt;第二个参数&lt;code class=&quot;highlighter-rouge&quot;&gt;prefix&lt;/code&gt;是每一条log的前缀，比如我们可以在错误记录前加上前缀“Error:”。&lt;/p&gt;
+
+&lt;p&gt;第三个参数&lt;code class=&quot;highlighter-rouge&quot;&gt;flag&lt;/code&gt;定义了每一条log的形式，说白了就是加上一些日期啊、时间啊、文件名啊之类的信息，用log包里的常量定义。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;E.g.
+
+logFile, _ := os.Open(&quot;myLogFile&quot;)
+myLogger := log.New(logFile, &quot;[INFO]&quot;, log.Ldate|log.Ltime)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;创建一个Logger，输出到文件&lt;code class=&quot;highlighter-rouge&quot;&gt;myLogFile&lt;/code&gt;中，每一条记录规定加上前缀&lt;code class=&quot;highlighter-rouge&quot;&gt;INFO&lt;/code&gt;，以及日期和时间。&lt;/p&gt;
+
+&lt;h2 id=&quot;使用-logger&quot;&gt;使用 Logger&lt;/h2&gt;
+
+&lt;p&gt;Logger创建完了，我们得记录啊。记录的时候用Logger自带的方法就行了，最简单的例如&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func (l *Logger) Println(v ...interface{})
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;复杂点的，像&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;func (l *Logger) Fatalln(v ...interface{})
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Fatal执行完之后会直接异常退出程序（执行&lt;code class=&quot;highlighter-rouge&quot;&gt;os.Exit(1)&lt;/code&gt;)&lt;/p&gt;
+
+&lt;p&gt;还有什么&lt;code class=&quot;highlighter-rouge&quot;&gt;Panicln&lt;/code&gt;，会在执行之后执行&lt;code class=&quot;highlighter-rouge&quot;&gt;panic()&lt;/code&gt;（发生了很恐怖的错误，吓得我赶紧把程序关了）&lt;/p&gt;
+
+&lt;p&gt;以及一些&lt;code class=&quot;highlighter-rouge&quot;&gt;get&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;set&lt;/code&gt;函数就没了，相当轻量级啊，不过能满足需要就是好东西。&lt;/p&gt;
+
+&lt;p&gt;实际使用一下：&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;E.g.
+
+myLogger.Println(&quot;[r0beRT] Login&quot;)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;运行之后看起来就像这个样子&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[INFO] 2017/10/31 15:11:39 [r0beRT] Login
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;log包简单易用，但是我们得自己定义我们的输出，要定义的有用而又优雅，没有多余信息且又面面俱到，输出结果还符合国际一般规范（不成文），才是大头啊，还是得自己去多看多用，积累经验呀。&lt;/p&gt;
+
+&lt;h1 id=&quot;参考&quot;&gt;参考&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://golang.org/pkg/log/&quot;&gt;log - The Go Programming Language&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><summary type="html">为啥要Log</summary></entry><entry><title type="html">Golang语言特性总记</title><link href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic.html" rel="alternate" type="text/html" title="Golang语言特性总记" /><published>2017-10-28T12:03:51+00:00</published><updated>2017-10-28T12:03:51+00:00</updated><id>https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic</id><content type="html" xml:base="https://hinanawitenshi.github.io/blogs/learninggolang/GolangCharacteristic.html">&lt;ul&gt;
+  &lt;li&gt;Slice&lt;/li&gt;
+  &lt;li&gt;Closure&lt;/li&gt;
+  &lt;li&gt;Interface&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;br /&gt;看到了就会写上，不定更新。&lt;/p&gt;
+
+&lt;h2 id=&quot;slice&quot;&gt;Slice&lt;/h2&gt;
+
+&lt;p&gt;在Gotour里，&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;是这样解释的：&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;An array has a fixed size. A slice, on the other hand, is a
+dynamically-sized, flexible view into the elements of an array. In
+practice, slices are much more common than arrays.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;简单翻译一下，&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;就是一个动态数组，大家平时一般都用它，而不是用定长的数组。&lt;/p&gt;
+
+&lt;p&gt;先简单看一下&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;的使用。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var s []int  // s is a nil slice
+
+primesArr := [6]int{2, 3, 5, 7, 11, 13}  // primesArr is an array
+primesSlice := []int{2, 3, 5, 7, 11, 13}  // primeSlice is a slice
+
+primesSlice = primesSlice[0:2] // {2, 3}
+primesSlice = primesSlice[2:4] // {5, 7}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然而，Gotour后还提到了，【&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;是数组的引用】，那么这就是另外一个故事了。在Golang中，&lt;code class=&quot;highlighter-rouge&quot;&gt;array&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;都有两个固有的属性&lt;code class=&quot;highlighter-rouge&quot;&gt;length&lt;/code&gt;和&lt;code class=&quot;highlighter-rouge&quot;&gt;capacity&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;array&lt;/code&gt;中这两者是恒等的，而&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;中则不然。&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;var a [5]int
+var s []int
+var ss = make([]int, 5)
+fmt.Println(len(a), cap(a), len(s), cap(s), len(ss), cap(ss))
+    // 5 5 0 0 5 5
+fmt.Println(len(ss[0:1]), cap(ss[0:1]))
+    // 1 5
+fmt.Println(len(ss[2:3]), cap(ss[2:3]))
+    // 1 3
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;所以对于&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;正确的理解，是将其看作一个数组的引用，而不是看作一个所谓的【动态数组】。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;用数组初始化&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;的时候，可以看作是引用了内存里的一个无名数组。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;capacity&lt;/code&gt;记录的是这个&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;所引用的数组的长度，而&lt;code class=&quot;highlighter-rouge&quot;&gt;length&lt;/code&gt;记录的是当前引用过来的元素个数。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;可进行随意的切分，但是从左边切是不可恢复的，从右边切是可恢复的，同时一旦这个&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;的某个元素被更改，那么由这个&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;切出来的所有&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;中这个元素都将被更改。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;直接创建的&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;空变量是没有容纳能力的，要使用&lt;code class=&quot;highlighter-rouge&quot;&gt;make&lt;/code&gt;方法；若要进行深复制，也要使用&lt;code class=&quot;highlighter-rouge&quot;&gt;make&lt;/code&gt;方法来创建一个新的&lt;code class=&quot;highlighter-rouge&quot;&gt;slice&lt;/code&gt;。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;closure&quot;&gt;Closure&lt;/h2&gt;
+
+&lt;p&gt;闭包可能是学习Golang的第一个难题，但是闭包并不是Golang专属的特性，在很多其他语言中也有闭包，最典型的——Javascript.&lt;/p&gt;
+
+&lt;p&gt;闭包的问题难在难以界定——闭包到底是什么？能不能有一言可以蔽之？在Gotour中对闭包的解释是&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;A closure is a function value that references variables from outside its body.
+The function may access and assign to the referenced variables; in the sense
+the function is “bound” to the variables.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;简而言之，就是在函数内可以保持一个函数外的局部变量的值，且不需要这个值进行任何形式的传递。我认为这段话基本上把闭包最重要的特点描述出来了——利用函数对局部变量作用域进行灵活操作。&lt;/p&gt;
+
+&lt;p&gt;Gotour里给的例子是一个简单的返回函数闭包，实际上闭包的用途实际上远不止于此，典型的例子如Javascript中对于循环添加事件的处理，但是其中最核心的想法是不变的，就是将局部变量保持在一个【看似】无法访问它的作用域中。&lt;/p&gt;
+
+&lt;p&gt;但是实际上，编成的时候大部分用到闭包的情况都是靠经验判断的，我们平时应该多多积累，在我们编程卡住的时候，不妨想想，这地方是否能用一用闭包？&lt;/p&gt;
+
+&lt;h2 id=&quot;interface&quot;&gt;Interface&lt;/h2&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Interface&lt;/code&gt;可以说是Golang里最最最重要的特点了，在Golang里实现【面向对象】特点全靠它，但它同时也是一个较难理解的概念。&lt;/p&gt;
+
+&lt;p&gt;让我们先来看Gotour是怎么说的&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;An interface type is defined as a set of method signatures.
+A value of interface type can hold any value that implements those methods.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;这两句简短的话道出了&lt;code class=&quot;highlighter-rouge&quot;&gt;Interface&lt;/code&gt;大量的奥秘。首先，interface是一个方法签名集，即interface可以看作是一个集合，这个集合的元素是函数（函数签名）；其次，&lt;code class=&quot;highlighter-rouge&quot;&gt;interface&lt;/code&gt;又可以作为任何实现了它方法的值的变量，这句话比较难理解，让我们看几个例子。&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;首先是我们非常熟悉的&lt;code class=&quot;highlighter-rouge&quot;&gt;fmt.Println()&lt;/code&gt;函数，可以看到，官方文档中，这个函数接受的参数是一系列的【空接口】。&lt;/p&gt;
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; func Println(a ...interface{}) (n int, err error)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+
+    &lt;p&gt;回想一下我们使用这个函数的场景，任何类型的变量都可以作为参数传入这个函数中，没错，就是因为&lt;code class=&quot;highlighter-rouge&quot;&gt;interface{}&lt;/code&gt;是一个函数签名集为空的接口，既然它没有任何方法需要实现，那么根据第二句话，任何类型的变量实际上都是&lt;code class=&quot;highlighter-rouge&quot;&gt;interface{}&lt;/code&gt;类型，或者说都可以转化为&lt;code class=&quot;highlighter-rouge&quot;&gt;interface{}&lt;/code&gt;类型。在很多处理未知类型的情况下（模板编程），Golang提供了&lt;code class=&quot;highlighter-rouge&quot;&gt;interface{}&lt;/code&gt;给我们使用。&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;文件读写&lt;/p&gt;
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; file, _ := os.OpenFile(somePath, os.O_RDONLY, os.ModePerm)
+ msg := make([]byte, 0)
+ file.Read(msg)
+ fmt.Println(string(msg))
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+
+    &lt;p&gt;上面是一个简单的读文件过程，&lt;code class=&quot;highlighter-rouge&quot;&gt;os.OpenFile&lt;/code&gt;返回一个&lt;code class=&quot;highlighter-rouge&quot;&gt;os.File&lt;/code&gt;结构体，而调用的&lt;code class=&quot;highlighter-rouge&quot;&gt;os.File&lt;/code&gt;结构体的&lt;code class=&quot;highlighter-rouge&quot;&gt;Read&lt;/code&gt;方法是接口&lt;code class=&quot;highlighter-rouge&quot;&gt;io.Reader&lt;/code&gt;里的方法，也就是说&lt;code class=&quot;highlighter-rouge&quot;&gt;os.File&lt;/code&gt;实现了接口&lt;code class=&quot;highlighter-rouge&quot;&gt;io.Reader&lt;/code&gt;.但是这并不足以体现接口在这里的作用，我们再来看下一段代码&lt;/p&gt;
+
+    &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; file, _ := os.OpenFile(somePath, os.O_RDONLY, os.ModePerm)
+ jsonDecoder := json.NewDecoder(file)
+ for jsonDecoder.More() {
+     var obj SomeStruct
+     jsonDecoder.Decode(\&amp;amp;obj)
+     fmt.Println(obj)
+ }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+    &lt;p&gt;上面是一个读取json文件的例子，注意到&lt;code class=&quot;highlighter-rouge&quot;&gt;json&lt;/code&gt;包中的&lt;code class=&quot;highlighter-rouge&quot;&gt;NewDecoder&lt;/code&gt;方法返回一个JSON解码器，能够将JSON文件中的条目写入一个结构体中，而这个方法接受的参数类型并不是&lt;code class=&quot;highlighter-rouge&quot;&gt;os.File&lt;/code&gt;，而是&lt;code class=&quot;highlighter-rouge&quot;&gt;io.Reader&lt;/code&gt;，也就是说任何实现了这个接口的结构体都可以被当作参数传入，因为只要实现了&lt;code class=&quot;highlighter-rouge&quot;&gt;io.Reader&lt;/code&gt;的方法就【足够】成为一个JSON解码器了。这样一来，无论是&lt;code class=&quot;highlighter-rouge&quot;&gt;strings.Reader&lt;/code&gt;还是&lt;code class=&quot;highlighter-rouge&quot;&gt;os.File&lt;/code&gt;，甚至是你自己实现的自定义结构体，都可以成为JSON解码器，一定程度上说，这就是体现了面向对象里的继承和多态的思想，大大提高了开发效率。&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;接口，是一个函数签名的集合，更是也是一个可自定义的抽象类型，正是它的存在使得在Golang里应用面向对象的设计思想成为可能。&lt;/p&gt;
+
+&lt;h2 id=&quot;参考&quot;&gt;参考&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://tour.golang.org/&quot;&gt;GoTour&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><summary type="html">Slice Closure Interface</summary></entry></feed>

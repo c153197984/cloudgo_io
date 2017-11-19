@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+<!-- Begin Jekyll SEO tag v2.3.0 -->
+<title>Golang Docker简易使用 | The Wonderful Heaven</title>
+<meta property="og:title" content="Golang Docker简易使用" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="在Docker上部署GolangHTTP服务器的学习笔记" />
+<meta property="og:description" content="在Docker上部署GolangHTTP服务器的学习笔记" />
+<link rel="canonical" href="https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker.html" />
+<meta property="og:url" content="https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker.html" />
+<meta property="og:site_name" content="The Wonderful Heaven" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-11-14T04:37:00+00:00" />
+<script type="application/ld+json">
+{"name":null,"description":"在Docker上部署GolangHTTP服务器的学习笔记","author":null,"@type":"BlogPosting","url":"https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker.html","publisher":null,"image":null,"headline":"Golang Docker简易使用","dateModified":"2017-11-14T04:37:00+00:00","datePublished":"2017-11-14T04:37:00+00:00","sameAs":null,"mainEntityOfPage":{"@type":"WebPage","@id":"https://hinanawitenshi.github.io/blogs/learninggolang/GolangDocker.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=55d055ca0a2aac6efd50cff0c6c6364c3913f9fa">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="/assets/js/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>The Wonderful Heaven</h1>
+        <p>不良天人もブログを書いているね。</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <div id="menu">
+          <a href="/" class="button"><strong>Home</strong></a>
+          <a href="/blogs" class="button"><strong>Blogs</strong></a>
+          <a href="/about" class="button"><strong>About</strong></a>
+          <a href="/hello" class="button"><strong>Hello</strong></a>
+        </div>
+        <!-- <a href="http://github.com/HinanawiTenshi/HinanawiTenshi.github.io" class="button fork"><strong>View On GitHub</strong></a> -->
+        
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1 class="page-heading">Golang Docker简易使用</h1>
+<hr>
+
+<h2 id="docker是什么">Docker是什么？</h2>
+
+<h3 id="摘要">摘要</h3>
+
+<p>Docker的概念类似于虚拟机，使用方式上和Git很像。一个虚拟机运行一个操作系统，在这个操作系统上可以运行各种各样的程序，主操作系统上的虚拟机充当一个虚拟硬件的角色，但是有一个问题：程序的运行往往需要很多依赖支持，例如C的运行时、python应用的python环境、java应用的JVM等等，在虚拟机环境下，这些运行环境还是要用户去手动配置的；而Docker更高一层，它充当的不是虚拟硬件，而是虚拟运行环境；只要把应用放入Docker中，运行时Docker会自动配置好所需的运行环境，用户在一个操作系统下就算不安装任何环境，只要装一个Docker，任何应用程序都可以直接跑起来。</p>
+
+<h3 id="docker的结构">Docker的结构</h3>
+
+<p>实际使用过程中，有两个关键性的对象——<code class="highlighter-rouge">Image</code>和<code class="highlighter-rouge">Container</code>。</p>
+
+<blockquote>
+  <p>An image is a lightweight, stand-alone, executable package that includes everything needed to run a piece of software, including the code, a runtime, libraries, environment variables, and config files.
+A container is a runtime instance of an image—what the image becomes in memory when actually executed. It runs completely isolated from the host environment by default, only accessing host files and ports if configured to do so.
+Containers run apps natively on the host machine’s kernel. They have better performance characteristics than virtual machines that only get virtual access to host resources through a hypervisor. Containers can get native access, each one running in a discrete process, taking no more memory than any other executable.</p>
+</blockquote>
+
+<ul>
+  <li><code class="highlighter-rouge">Image</code>是一个轻量级的、独立的、可执行的包，它包含了所有软件运行所需要的组件。当然，我们在制作<code class="highlighter-rouge">Image</code>的时候并不需要手动去下载那些组件啊依赖什么的，因为那些组件在网络上也已经有现成的<code class="highlighter-rouge">Image</code>了，我们只管写代码，之后交给Docker去自动合成就好了。</li>
+  <li><code class="highlighter-rouge">Container</code>是一个<code class="highlighter-rouge">Image</code>的运行实例。<code class="highlighter-rouge">Image</code>和<code class="highlighter-rouge">Container</code>的关系就好像程序和进程，把<code class="highlighter-rouge">Image</code>跑起来就是一个<code class="highlighter-rouge">Container</code>了，这个玩意儿里面包括了所有需要的运行环境，程序能毫无阻拦地在里面运行，并且这个东西是运行在主操作系统上的，相较于虚拟机来说肯定有性能上的优势。</li>
+</ul>
+
+<h2 id="为什么要使用docker">为什么要使用Docker？</h2>
+
+<p>对于一个技术，我们要正确使用它就必须清除它是为了解决什么问题。在linux系统下玩过开发的应该都有体会，安装环境是多么令人头疼的一件事，每次都要去别人官网看一大堆教程，安装的时候还可能遇到这样那样的错误，在stackoverflow里又要逛好久；这倒不是什么事儿，装完了就一劳永逸了。关键是当我们需要在一个别的什么新的操作系统下运行一个程序，难道还得重复一遍之前的痛苦？一个典型的例子就是部署服务器了，在vps服务商那儿高高兴兴地买了个vps，登上去之后把自己的server一拷，发现根本跑不起来，又是缺这又是缺那的，这个时候我们终于意识到了，Docker这个技术是多么的伟大这个事实..所以说为什么现在各大云服务商都推出了容器服务，你根本就接触不到操作系统，把Docker的image给人一传，你的服务器马上就能工作了。（AWS的注册要国际银行卡啊..臣没有呀..）</p>
+
+<h2 id="docker的使用">Docker的使用</h2>
+
+<h3 id="安装ubuntu-1604-lts">安装（Ubuntu 16.04 LTS）</h3>
+
+<p>当然了，就算是项羽也不能把自个儿拎起来；Docker本身还是得我们自己手动安装的。实话说，安装过程还是看官方教程比较好，博客的东西都不具有时效性啊。</p>
+
+<ol>
+  <li>
+    <p>卸载旧版Docker</p>
+
+    <p>话说开天辟地之时，Docker是不分社区版和企业版的，安装方式也没那么复杂，可是后来社区版和企业版一分，安装方式也变了，还得我们自己卸载旧版本。不过第一次安装的话这一步就不用管了。</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> $ sudo apt-get remove docker docker-engine docker.io
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>安装Docker CE</p>
+
+    <p>我当然是安装社区版了；过程其实很简单，把下面一串命令麻溜地敲进去就好了。</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> $ sudo apt-get update
+
+ $ sudo apt-get install \
+ apt-transport-https \
+ ca-certificates \
+ curl \
+ software-properties-common
+
+ $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+ $ sudo add-apt-repository \
+ "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+ $(lsb_release -cs) \
+ stable"
+</code></pre></div>    </div>
+
+    <p>这几个命令大概就是先安装依赖，然后创建一个专属的包仓库，再从这个仓库里安装（这样更新卸载啥的都很方便）；最后一个命令才是真正的安装，要是找不到包的话再update一下应该就可以了。BTW，docker的服务器要在国内访问可能有些困难，这个自己想办法解决吧。</p>
+
+    <p>另外，计算机架构不同的话要改一改最后一个命令里的<code class="highlighter-rouge">arch=amd64</code>这个部分，具体等于啥，我也不懂，不过一般要改这个的人应该都不用看这个博客了..</p>
+
+    <p>当然你也可以从官网下个deb，然后每次更新都重新下新的deb..</p>
+  </li>
+  <li>
+    <p>卸载Docker CE</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> $ sudo apt-get purge docker-ce
+ $ sudo rm -rf /var/lib/docker
+</code></pre></div>    </div>
+
+    <p>一般来说这辈子都没机会输入这两个命令。</p>
+  </li>
+</ol>
+
+<h3 id="简单使用">简单使用</h3>
+
+<p>今天我们的目标是把一个Go语言的hello world服务器在docker里运行一波，至于部署到服务器上..AWS中国还没给我发邮件..</p>
+
+<p>首先看一下源代码目录：</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>simple_http
+&gt; .git
+&gt; Dockerfile
+&gt; main.go
+&gt; README.md
+</code></pre></div></div>
+
+<p>除了<code class="highlighter-rouge">Dockerfile</code>，都和docker没啥关系了。Dockerfile是一个配置文件，所有必须的组建和依赖都在这里面进行配置，例如安装python依赖包之类的；除此之外，还有一些功能性的东西，比如导出端口啥的。</p>
+
+<p>鉴于Go语言先天优势，它实在是没啥依赖，Dockerfile里只用写两行就行了</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>FROM golang:onbuild
+EXPOSE 8080
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">FROM</code>条目一般来说是必需的，官方有各种各样的语言镜像，提供了最基础的运行环境。<code class="highlighter-rouge">FROM</code>后跟着一个镜像名，一个镜像名后加个冒号表示TAG，也就是说<code class="highlighter-rouge">golang</code>是镜像名，<code class="highlighter-rouge">onbuild</code>是TAG。至于TAG是干啥的，我也不太清楚..</li>
+  <li><code class="highlighter-rouge">EXPOSE</code>是导出的端口。Docker里的应用程序实际上仍然是在沙盒里运行的，即使程序里监听了8080端口，也是监听的那个沙盒的8080端口，我们要把沙盒的8080端口和主机的8080端口连在一起，才能访问。</li>
+</ul>
+
+<p>什么？你说你用的是python？那Dockerfile可有的写了，善用官方文档和搜索引擎..</p>
+
+<p>写完Dockerfile之后，就可以创建镜像了，cd到这个目录然后敲</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo docker build -t xxx:yyy .
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">-t</code>表示命名，xxx表示镜像名，yyy表示TAG</li>
+</ul>
+
+<p>跑完之后，一个镜像就创建好了，可以敲入如下命令来查看</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo docker images
+</code></pre></div></div>
+
+<p>创建完镜像之后，就是运行了，敲入如下命令</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ docker run --publish 8080:8080 --name test --rm xxx
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">--publish xxxx:yyyy</code> 将主机的xxxx端口绑定到container的yyyy端口。</li>
+  <li><code class="highlighter-rouge">--name xxx</code> 给我们的container起个名字（重要）。</li>
+  <li><code class="highlighter-rouge">--rm</code> 在运行完成后删除镜像。</li>
+  <li><code class="highlighter-rouge">xxx</code> 刚才创建的镜像名</li>
+</ul>
+
+<p>这样我们的程序就在docker里跑起来了，而且监听了主机的8080端口，可以curl一下localhost:8080来试试效果。</p>
+
+<h2 id="附录">附录</h2>
+
+<h3 id="maingo">main.go</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">package</span> <span class="n">main</span>
+
+<span class="n">import</span> <span class="p">(</span>
+	<span class="s2">"fmt"</span>
+	<span class="s2">"log"</span>
+	<span class="s2">"net/http"</span>
+	<span class="s2">"strings"</span>
+<span class="p">)</span>
+
+<span class="n">func</span> <span class="n">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="p">//</span> <span class="n">A</span> <span class="n">simple</span> <span class="n">http</span> <span class="n">server</span><span class="p">.</span>
+	<span class="p">//</span>
+	<span class="p">//</span> <span class="n">This</span> <span class="n">server</span> <span class="nf">send</span> <span class="s2">"Hello user"</span> <span class="k">to</span> <span class="n">client</span> <span class="n">based</span> <span class="n">on</span> <span class="n">URL</span><span class="p">.</span>
+	<span class="p">//</span> <span class="n">Example</span><span class="p">:</span>
+	<span class="p">//</span>
+	<span class="p">//</span> <span class="n">localhost</span><span class="p">:</span><span class="m">8080</span><span class="p">/</span><span class="n">foo</span><span class="p">/</span><span class="n">bar</span>
+	<span class="p">//</span> <span class="p">&gt;</span> <span class="n">Hello</span> <span class="n">foo</span> <span class="n">bar</span><span class="c1">!
+</span>	<span class="p">//</span>
+	<span class="n">http</span><span class="p">.</span><span class="n">HandleFunc</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">func</span><span class="p">(</span><span class="n">w</span> <span class="n">http</span><span class="p">.</span><span class="n">ResponseWriter</span><span class="p">,</span> <span class="n">r</span> <span class="p">*</span><span class="n">http</span><span class="p">.</span><span class="n">Request</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">fmt</span><span class="p">.</span><span class="n">Fprintf</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="s2">"Hello %s!</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span>
+			<span class="n">strings</span><span class="p">.</span><span class="n">Join</span><span class="p">(</span><span class="n">strings</span><span class="p">.</span><span class="n">Split</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">URL</span><span class="p">.</span><span class="k">String</span><span class="p">(),</span> <span class="s2">"/"</span><span class="p">)[</span><span class="m">1</span><span class="p">:],</span> <span class="s2">" "</span><span class="p">))</span>
+	<span class="p">})</span>
+
+	<span class="n">fmt</span><span class="p">.</span><span class="n">Println</span><span class="p">(</span><span class="s2">"Listening to port 8080."</span><span class="p">)</span>
+	<span class="nb">log</span><span class="p">.</span><span class="n">Fatal</span><span class="p">(</span><span class="n">http</span><span class="p">.</span><span class="n">ListenAndServe</span><span class="p">(</span><span class="s2">":8080"</span><span class="p">,</span> <span class="n">nil</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="参考">参考</h2>
+
+<p><a href="https://docs.docker.com/">Docker Docs</a></p>
+
+<p><a href="https://blog.golang.org/docker">Deploying Go servers with Docker - The Go Blog</a></p>
+
+
+
+
+      </section>
+      <footer>
+        <p><a href="http://github.com/HinanawiTenshi">Github</a></p>
+        <p><a href="mailto:dr.paper@live.com">Email</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+
+    
+  </body>
+</html>
